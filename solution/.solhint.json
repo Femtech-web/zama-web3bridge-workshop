@@ -1,0 +1,25 @@
+{
+  "extends": "solhint:recommended",
+  "rules": {
+    "compiler-version": ["error", "^0.8.27"],
+    "func-name-mixedcase": "off",
+    "gas-custom-errors": "off",
+    "gas-indexed-events": "off",
+    "gas-named-return-values": "off",
+    "gas-strict-inequalities": "off",
+    "gas-small-strings": "off",
+    "no-empty-blocks": "off",
+    "one-contract-per-file": "off",
+    "max-line-length": "off",
+    "immutable-vars-naming": "off",
+    "var-name-mixedcase": "off",
+    "use-natspec": "off",
+    "func-visibility": [
+      "error",
+      {
+        "ignoreConstructors": true
+      }
+    ],
+    "gas-increment-by-one": "off"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "plugins": ["prettier-plugin-solidity"],
+  "printWidth": 100,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "parser": "slang",
+        "tabWidth": 4
+      }
+    }
+  ]
+}

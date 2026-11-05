@@ -1,0 +1,10 @@
+node_modules
+**/.next
+**/artifacts
+**/cache
+**/types
+**/fhevmTemp
+package-lock.json
+**/next-env.d.ts
+**/deployment.json
+.workshop-backups
