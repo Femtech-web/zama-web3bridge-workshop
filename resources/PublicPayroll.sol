@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-/// @notice Slide reference only. Public state and calldata reveal every salary.
+/// @notice Slides 2 and 5: public state and transaction input reveal every salary.
 contract PublicPayroll {
     address public immutable employer = msg.sender;
     mapping(address employee => uint64 amount) public salaryOf;

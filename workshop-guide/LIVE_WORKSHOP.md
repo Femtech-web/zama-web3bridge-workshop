@@ -1,6 +1,25 @@
 # Live workshop: Confidential Onchain Finance — From Idea to Code
 
-A 70–80 minute lesson, with short pauses for questions. Prepare setup and token funding before the session. Teach contracts first, then tests, then the frontend.
+A 60-minute lesson following the 16-slide Technical Workshop Master Guide. Prepare setup and token funding before the session. Teach contracts first, then tests, then the frontend.
+
+## Slide-to-code map
+
+Slide numbers refer to the presentation; step numbers refer to the 14 coding exercises below. In the starter, search for `Slide 5` or `Step 1`. Labels sit outside the TODO regions so they remain after applying a checkpoint. Code marked **Prepared demo**, **Prepared reference**, or **Prepared setup** is already supplied.
+
+| Master slide                                        | Coding steps                | Code to open in `starter/`                                                                                                                                                                                                                             |
+| --------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 5 — From Solidity to Confidential Solidity          | 1–2                         | [ConfidentialPayroll.sol](../starter/contracts/ConfidentialPayroll.sol): configuration and `salaryOf`                                                                                                                                                  |
+| 6 — How Do You Put a Secret on a Public Blockchain? | 3                           | [ConfidentialPayroll.sol](../starter/contracts/ConfidentialPayroll.sol): `setSalary`                                                                                                                                                                   |
+| 7 — Compute Without Decrypting                      | 4                           | [ConfidentialPayroll.sol](../starter/contracts/ConfidentialPayroll.sol): `addBonus`                                                                                                                                                                    |
+| 8 — We Hid the Salary. Who Can Use It?              | 5                           | [ConfidentialPayroll.sol](../starter/contracts/ConfidentialPayroll.sol): `_grant`                                                                                                                                                                      |
+| 9 — Prove It Before Building the Button             | 6                           | [test/ConfidentialPayroll.ts](../starter/test/ConfidentialPayroll.ts): test input helper                                                                                                                                                               |
+| 10 — FHE Changes Some Solidity Assumptions          | 7                           | [ConfidentialPayroll.sol](../starter/contracts/ConfidentialPayroll.sol): overflow handling in `addBonus`                                                                                                                                               |
+| 11 — Encrypt → Write → Decrypt                      | 8–11, Parts 1–4             | [client.ts](../starter/frontend/lib/zama/client.ts) → [encryption.ts](../starter/frontend/lib/zama/encryption.ts) → [write-salary.ts](../starter/frontend/lib/contracts/write-salary.ts) → [decryption.ts](../starter/frontend/lib/zama/decryption.ts) |
+| 12 — ERC-7984: Confidential Tokens                  | Prepared reference; no TODO | [WorkshopAssets.sol](../starter/contracts/WorkshopAssets.sol): public token and confidential wrapper                                                                                                                                                   |
+| 13 — From Encrypted Salary to Confidential Payment  | 12                          | [ConfidentialPayroll.sol](../starter/contracts/ConfidentialPayroll.sol): `pay`                                                                                                                                                                         |
+| 14 — Shield → Pay → Unshield                        | 13–14; prepared demo        | [use-assets.ts](../starter/frontend/hooks/use-assets.ts); [use-treasury-balance.ts](../starter/frontend/hooks/use-treasury-balance.ts) for employer viewing                                                                                            |
+
+Slides 1–4 introduce the project and protocol. Slides 15–16 cover other applications, resources, and the auditor challenge; they add no numbered exercises.
 
 ## Before the room opens
 
@@ -12,7 +31,7 @@ Open `starter/` in the editor and keep the lesson terminal in that folder. All s
 
 Default starter tests show 3 baseline passes and 28 pending confidential exercises. This is intentional: incomplete actions are guarded by numbered TODO errors. `test:full` enables the actual exercise suite. Do not present pending tests as proof of confidential correctness.
 
-## Opening: slides 1–4, four minutes
+## Opening: slides 1–4, ten minutes
 
 **Confidential Onchain Finance — From Idea to Code.** “An employer wants to pay people onchain without publishing everyone's salary.” Show `resources/PublicPayroll.sol`: normal storage and normal input expose amounts even if a variable is named private.
 
@@ -28,7 +47,7 @@ Each code block below is the exact solution region. Copy only that numbered regi
 
 ## Step 1 — Configure FHEVM
 
-**Slide / concept:** Configure FHEVM
+**Slide / concept:** Slide 5 — From Solidity to Confidential Solidity
 
 **Problem:** The payroll contract must know the Zama contracts that run encrypted work, check inputs, and manage access.
 
@@ -60,7 +79,7 @@ npm run compile
 
 ## Step 2 — Encrypted types and handles
 
-**Slide / concept:** Encrypted Types & Inputs
+**Slide / concept:** Slide 5 — From Solidity to Confidential Solidity
 
 **Problem:** A public uint64 exposes salary. A private Solidity variable still exposes blockchain storage.
 
@@ -92,7 +111,7 @@ npm run compile
 
 ## Step 3 — Verify encrypted external input
 
-**Slide / concept:** Encrypted Types & Inputs
+**Slide / concept:** Slide 6 — How Do You Put a Secret on a Public Blockchain?
 
 **Problem:** The employer must supply a salary without putting its plaintext in transaction input.
 
@@ -124,7 +143,7 @@ npm run compile
 
 ## Step 4 — Compute without decrypting
 
-**Slide / concept:** Compute Without Decrypting
+**Slide / concept:** Slide 7 — Compute Without Decrypting
 
 **Problem:** We need to add a bonus without reading salary onchain.
 
@@ -156,7 +175,7 @@ npm run compile
 
 ## Step 5 — Who may access the salary?
 
-**Slide / concept:** Who Can Access the Value?
+**Slide / concept:** Slide 8 — We Hid the Salary. Who Can Use It?
 
 **Problem:** Encryption alone does not answer who can reuse or view the result.
 
@@ -190,7 +209,7 @@ npm run compile
 
 ## Step 6 — Test the confidential contract
 
-**Slide / concept:** Testing Confidential Logic
+**Slide / concept:** Slide 9 — Prove It Before Building the Button
 
 **Problem:** Before adding wallet buttons, prove encrypted input binding and selective access locally.
 
@@ -225,7 +244,7 @@ npm run test:full -- --grep 'Confidential salary and permissions (?!.*(?:overflo
 
 ## Step 7 — Confidential overflow safety
 
-**Slide / concept:** FHE Best Practices — Overflow, Types & Permissions
+**Slide / concept:** Slide 10 — FHE Changes Some Solidity Assumptions
 
 **Problem:** Encrypted uint64 addition wraps; Solidity 0.8 checked-arithmetic expectations do not protect it.
 
@@ -257,7 +276,7 @@ npm run test:full -- --grep 'Confidential salary and permissions'
 
 ## Step 8 — Frontend architecture and SDK client
 
-**Slide / concept:** Frontend — Encrypt → Write → Decrypt
+**Slide / concept:** Slide 11 — Encrypt → Write → Decrypt, Part 1: SDK Configuration
 
 **Problem:** The frontend needs browser cryptography, a wallet, chain access, and a clear secret boundary.
 
@@ -307,7 +326,7 @@ npm run dev -- --port 3001
 
 ## Step 9 — Encrypt 5000 before sending it
 
-**Slide / concept:** Frontend — Encrypt → Write → Decrypt
+**Slide / concept:** Slide 11 — Encrypt → Write → Decrypt, Part 2: Encrypt Salary
 
 **Problem:** A confidential contract cannot undo plaintext already broadcast in transaction transaction input.
 
@@ -346,7 +365,7 @@ npm run typecheck
 
 ## Step 10 — Submit encrypted salary with Viem
 
-**Slide / concept:** Frontend — Encrypt → Write → Decrypt
+**Slide / concept:** Slide 11 — Encrypt → Write → Decrypt, Part 3: Contract Write
 
 **Problem:** We have an encrypted input; now the contract must receive its exact arguments.
 
@@ -385,7 +404,7 @@ npm run typecheck
 
 ## Step 11 — The employee views their salary
 
-**Slide / concept:** Frontend — Encrypt → Write → Decrypt
+**Slide / concept:** Slide 11 — Encrypt → Write → Decrypt, Part 4: Employee Decryption
 
 **Problem:** The salary is already encrypted onchain. The employee now asks to view the value they may access.
 
@@ -423,7 +442,7 @@ npm run typecheck
 
 ## Step 12 — Confidential payroll payment
 
-**Slide / concept:** Confidential Payments with ERC-7984
+**Slide / concept:** Slide 13 — From Encrypted Salary to Confidential Payment
 
 **Problem:** A private salary record does not pay anybody; use standard confidential money.
 
@@ -457,7 +476,7 @@ npm run test:full
 
 ## Step 13 — Shield the payroll treasury
 
-**Slide / concept:** Shield → Pay → Unshield
+**Slide / concept:** Slide 14 — Shield → Pay → Unshield
 
 **Problem:** Public ERC-20 tokens must enter the official confidential wrapper before payroll can spend them.
 
@@ -500,7 +519,7 @@ npm run typecheck
 
 ## Step 14 — Unshield and finalize
 
-**Slide / concept:** Shield → Pay → Unshield
+**Slide / concept:** Slide 14 — Shield → Pay → Unshield
 
 **Problem:** Encrypted balance cannot be released as public ERC-20 until a proof-checked withdrawal amount is available.
 
@@ -545,11 +564,11 @@ npm run typecheck
 
 **Docs:** [Official reference](https://docs.openzeppelin.com/confidential-contracts/api/token)
 
-## Closing: slides 14–15, three minutes
+## Closing: slides 15–16, six minutes
 
-**What You Can Build Next.** Return to the single payroll story: confidentiality is encrypted input, useful computation, and deliberate permissions, not anonymity. Builders can now apply the same sequence to lending, private balances, or treasury workflows.
+**Slide 15 — Payroll Is Just One Example.** Return to the single payroll story: confidentiality is encrypted input, useful computation, and deliberate permissions, not anonymity. Builders can now apply the same sequence to lending, private balances, or treasury workflows.
 
-**Resources + Challenge.** Open [resources/README.md](../resources/README.md). Assign employee-controlled auditor access. Require positive and negative decryption tests and a clear policy for updated salary handles. Do not implement the answer during the session.
+**Slide 16 — Keep Building.** Open [resources/README.md](../resources/README.md). Assign employee-controlled auditor access. Require positive and negative decryption tests and a clear policy for updated salary handles. Do not implement the answer during the session.
 
 ## Performance and security cues to say aloud
 

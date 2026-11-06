@@ -32,8 +32,9 @@ async function encryptAmount(
   sender: HardhatEthersSigner,
   amount: bigint,
 ): Promise<{ handles: Uint8Array[]; inputProof: Uint8Array }> {
+  // Slide 9 | Step 6: Build encrypted test input.
   // @workshop:start 6
-  // TODO 6: Build a sender-and-contract-bound local encrypted input.
+  // TODO 6: Create and encrypt a local input for this sender and contract.
   // Docs: https://docs.zama.org/protocol/solidity-guides/development-guide/hardhat/write_test
   throw new Error("Complete TODO 6: create and encrypt the local input.");
   // @workshop:end 6

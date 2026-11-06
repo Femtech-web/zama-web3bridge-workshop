@@ -2,6 +2,8 @@
 
 Fill in the 14 numbered TODOs to build confidential payroll. The initial tests run three baseline checks and leave 28 exercise tests pending. Run `npm run test:full` as you complete the lesson.
 
+Search for `Slide 5` or `Step 1` in the code to follow the master guide. Slide numbers match the 16-slide presentation; step numbers match the 14 exercises. Comments marked **Prepared demo** or **Prepared reference** identify code to explain rather than fill in. The [live guide](../workshop-guide/LIVE_WORKSHOP.md#slide-to-code-map) lists the mapping.
+
 This folder is a standalone project. Use Node 22 and npm 10+; run all commands here.
 
 ```bash

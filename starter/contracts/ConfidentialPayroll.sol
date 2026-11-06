@@ -8,8 +8,9 @@ import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract ConfidentialPayroll is
+    // Slide 5 | Step 1: Configure confidential Solidity.
     // @workshop:start 1
-    // TODO 1: Configure the payroll contract.
+    // TODO 1: Inherit the Zama configuration before ReentrancyGuard.
     // Docs: https://docs.zama.org/protocol/solidity-guides/v0.11/smart-contract/configure
     // @workshop:end 1
     ReentrancyGuard
@@ -55,8 +56,9 @@ contract ConfidentialPayroll is
         bytes calldata inputProof
     ) external onlyEmployer {
         _validEmployee(employee);
+        // Slide 6 | Step 3: Verify encrypted salary input.
         // @workshop:start 3
-        // TODO 3: Verify and convert the external encrypted salary input.
+        // TODO 3: Verify the external encrypted salary and proof with FHE.fromExternal.
         // Docs: https://docs.zama.org/protocol/solidity-guides/smart-contract/inputs
         euint64 value = _unfinishedValue(3);
         // @workshop:end 3
@@ -73,13 +75,15 @@ contract ConfidentialPayroll is
         _requireSalary(employee);
         euint64 bonus = FHE.fromExternal(encryptedBonus, inputProof);
         euint64 previous = salaries[employee];
+        // Slide 7 | Step 4: Add an encrypted bonus.
         // @workshop:start 4
-        // TODO 4: Add salary and bonus without decrypting.
+        // TODO 4: Add the encrypted salary and bonus with FHE.add.
         // Docs: https://docs.zama.org/protocol/solidity-guides/smart-contract/operations
         euint64 candidate = _unfinishedValue(4);
         // @workshop:end 4
+        // Slide 10 | Step 7: Handle encrypted overflow.
         // @workshop:start 7
-        // TODO 7: Retain the previous salary if encrypted addition overflows.
+        // TODO 7: Use an encrypted comparison and FHE.select to keep the old salary on overflow.
         // Docs: https://docs.zama.org/protocol/solidity-guides/smart-contract/operations
         // Deliberately unsafe until this step: FHE addition wraps modulo 2^64.
         euint64 updated = candidate;
@@ -90,8 +94,9 @@ contract ConfidentialPayroll is
     }
 
     function salaryOf(address employee) external view returns (euint64) {
+        // Slide 5 | Step 2: Read an encrypted salary.
         // @workshop:start 2
-        // TODO 2: Return the employee's encrypted euint64 salary handle.
+        // TODO 2: Return the saved encrypted salary handle for this employee.
         // Docs: https://docs.zama.org/protocol/solidity-guides/smart-contract/types
         if (FHE.isInitialized(salaries[employee])) return _unfinishedValue(2);
         return salaries[employee];
@@ -116,8 +121,9 @@ contract ConfidentialPayroll is
         }
         payment.attempts++;
         euint64 due = payment.remaining;
+        // Slide 13 | Step 12: Pay with confidential tokens.
         // @workshop:start 12
-        // TODO 12: Grant transient token access and make the confidential payment.
+        // TODO 12: Let the token use the encrypted amount for this transaction, then transfer it.
         // Docs: https://docs.openzeppelin.com/confidential-contracts/api/token
         euint64 transferred = _unfinishedValue(12);
         // @workshop:end 12
@@ -132,6 +138,7 @@ contract ConfidentialPayroll is
         return payments[employee][period];
     }
 
+    // Slide 14 | Prepared demo: read payroll's balance and its viewing permission.
     function treasuryBalance() public view returns (euint64 balance, bool employerCanView) {
         balance = token.confidentialBalanceOf(address(this));
         employerCanView = !FHE.isInitialized(balance) || FHE.isAllowed(balance, employer);
@@ -145,8 +152,9 @@ contract ConfidentialPayroll is
     }
 
     function _grant(euint64 value, address employee) internal {
+        // Slide 8 | Step 5: Grant salary permissions.
         // @workshop:start 5
-        // TODO 5: Grant payroll, employee, and employer permissions.
+        // TODO 5: Allow payroll to reuse the value and the employee and employer to view it.
         // Docs: https://docs.zama.org/protocol/solidity-guides/smart-contract/acl
         _unfinishedValue(5);
         // @workshop:end 5

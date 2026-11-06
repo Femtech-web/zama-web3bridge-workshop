@@ -14,6 +14,7 @@ const walletTheme = lightTheme({
 });
 walletTheme.fonts.body = "var(--font-neue-montreal), sans-serif";
 
+// Slide 11, Part 1 | Prepared setup: wallet connection and Sepolia chain reads.
 function createWalletConfig() {
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
   const connectors = connectorsForWallets(

@@ -90,8 +90,9 @@ export function useAssets(session: WorkshopSession) {
         }),
       );
       session.setStatus("Waiting for wallet… Shield approved tokens.");
+      // Slide 14 | Step 13: Shield tokens (prepared demo).
       // @workshop:start 13
-      // TODO 13: Shield through the official ERC-20 wrapper (prepared demonstration).
+      // TODO 13: Wrap the approved public tokens for the selected wallet or payroll recipient.
       // Docs: https://docs.openzeppelin.com/confidential-contracts/token
       throw new Error("Complete TODO 13 or restore the prepared shield checkpoint.");
       // @workshop:end 13
@@ -103,6 +104,7 @@ export function useAssets(session: WorkshopSession) {
     });
   }
 
+  // Slide 14 | Prepared demo: request a withdrawal from the connected wallet's shielded tokens.
   function requestUnshield() {
     return session.runTask(async () => {
       const { walletClient, publicClient, address, deployment } = session.requireSession();
@@ -166,8 +168,9 @@ export function useAssets(session: WorkshopSession) {
       session.setStatus(
         "Waiting for public withdrawal decryption… Retry finalize later if the Relayer is still processing.",
       );
+      // Slide 14 | Step 14: Finalize unshielding (prepared demo).
       // @workshop:start 14
-      // TODO 14: Verify public withdrawal decryption and finalize (prepared demonstration).
+      // TODO 14: Obtain the public withdrawal result and proof, then finalize the request.
       // Docs: https://docs.openzeppelin.com/confidential-contracts/api/token
       throw new Error("Complete TODO 14 or restore the prepared unshield checkpoint.");
       // @workshop:end 14

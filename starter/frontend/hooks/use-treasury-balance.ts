@@ -9,6 +9,7 @@ import { payrollAbi } from "@/lib/contracts/payrollAbi";
 import { decryptAmount } from "@/lib/zama/decryption";
 import type { WorkshopSession } from "./use-workshop-session";
 
+// Slide 14 | Prepared demo: let the employer view payroll's shielded balance.
 export function useTreasuryBalance(session: WorkshopSession) {
   const [revealed, setRevealed] = useState<{ payroll: Address; handle: Hex; amount: string }>();
   const supported = session.deployment?.treasuryViewing === true;

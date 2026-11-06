@@ -7,6 +7,7 @@ import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC798
 import {ERC7984ERC20Wrapper} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
+// Slide 12 | Prepared reference: public tokens used for shielding and unshielding.
 /// @notice Valueless workshop tokens. The public faucet is deliberately testnet-only.
 contract WorkshopUSD is ERC20 {
     constructor() ERC20("Workshop USD", "wUSD") {}
@@ -21,6 +22,7 @@ contract WorkshopUSD is ERC20 {
     }
 }
 
+// Slide 12 | Prepared reference: compare this confidential wrapper with the public token above.
 /// @notice Official wrapper implementation; no custom balance or money logic.
 contract ConfidentialWorkshopUSD is ZamaEthereumConfig, ERC7984ERC20Wrapper {
     constructor(
