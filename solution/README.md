@@ -31,6 +31,12 @@ Deployment writes `frontend/deployment.json`. Preserve `deployments/` to resume 
 
 `npm run test:sepolia` sends real testnet transactions through the complete flow. It funds a temporary employee with 0.006 Sepolia ETH and refunds unused fees apart from a small reserve.
 
+## Vercel
+
+Set Root Directory to `solution/frontend`, Framework Preset to **Next.js**, and Node.js to **22.x**. Enable **Include source files outside of the Root Directory in the Build Step** so Vercel can use this project's package and lockfile. Keep Output Directory at its default; `frontend/vercel.json` supplies the install and build commands.
+
+Configure the contract addresses in Vercel using `frontend/.env.example` as the variable list, including `PAYROLL_TREASURY_VIEWING=true` for the updated payroll. WalletConnect and a custom RPC are optional. The deployer private key stays local. Redeploy after changing settings, then open the URL listed under the successful deployment's Domains.
+
 ## Commands
 
 - `npm run compile`: compile contracts and update frontend ABIs.
