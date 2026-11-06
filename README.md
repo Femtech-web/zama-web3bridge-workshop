@@ -6,10 +6,10 @@ The workshop follows **contracts → tests → frontend → payments**. You will
 
 ## Get started
 
-Use **Node 22** (the version in each project's `.nvmrc`) and **npm 10+**. Replace `REPOSITORY_URL` with the published workshop URL:
+Use **Node 22** (the version in each project's `.nvmrc`) and **npm 10+**:
 
 ```bash
-git clone REPOSITORY_URL zama-web3bridge-workshop
+git clone https://github.com/Femtech-web/zama-web3bridge-workshop.git
 cd zama-web3bridge-workshop/solution
 nvm use
 npm ci
@@ -40,7 +40,7 @@ npm run verify
 npm run dev -- --port 3001
 ```
 
-Open [localhost:3001](http://localhost:3001). The starter compiles and runs three baseline tests; 23 exercise tests remain pending until their TODOs are completed. Run `npm run test:full` to include them. Both projects have the same file structure.
+Open [localhost:3001](http://localhost:3001). The starter compiles and runs three baseline tests; 28 exercise tests remain pending until their TODOs are completed. Run `npm run test:full` to include them. Both projects have the same file structure.
 
 The [live guide](workshop-guide/LIVE_WORKSHOP.md) explains every TODO, its code, test command, and recovery step. The instructor can preview or apply a checkpoint from the repository root:
 
@@ -78,13 +78,19 @@ Deployment writes `frontend/deployment.json` automatically. Keep the project's `
 
 Sepolia needs no Zama API key. A browser wallet works without extra setup; WalletConnect is optional. Frontend server settings are listed in each project's `frontend/.env.example`.
 
+The updated payroll supports private treasury viewing. Its predecessor is recorded in `workshop-guide/PREVIOUS_DEPLOYMENT.json`; funds and salary records are not migrated. To manage the earlier payroll, copy that file to `frontend/deployment.json` and reload the app. Restore `workshop-guide/DEPLOYMENT.json` when returning to the updated payroll. Both deployments use the same token contracts.
+
 ## Use the app
 
 1. As employer, enter an employee address, set salary `5000`, then add bonus `500`.
 2. As employee, click **View my salary** and approve private viewing. Expect `5500`.
 3. As employer, get practice tokens, enter `6000`, and shield to payroll. Approve and confirm both transactions.
 4. Choose a payroll period, then pay the employee. Retry the same period if funding was insufficient; changing the period starts another payment.
-5. As employee, view the confidential balance. Request an unshield amount, keep its request ID, then finalize when ready. Public tokens arrive after finalization.
+5. In Assets, use **View balance** to privately see your wallet's shielded tokens and **Hide balance** to hide them again. Under **Shield**, choose **My wallet** or **Payroll treasury** in **Send to**. Payroll holds its funds separately.
+6. As employer, use **View balance** under **Payroll shielded balance** in Assets. Authorize viewing when prompted, then approve private viewing. Hide it when finished. A later deposit or payment may require a new authorization.
+7. As employee, request an unshield amount, keep its request ID, then finalize when ready. Public tokens arrive after finalization.
+
+Assets always uses the connected wallet. **Send to** changes the destination of Shield. Choose **Unshield** to withdraw from your own wallet's shielded balance; its pending withdrawal controls appear there. Only the employer address saved in the payroll contract can set salaries and pay employees. Other wallets can view their own salary and manage their own tokens.
 
 Amounts use six decimal places. Practice tokens have no monetary value. The [live guide](workshop-guide/LIVE_WORKSHOP.md) includes a rehearsal checklist and common fixes.
 
@@ -108,7 +114,7 @@ The browser encrypts salary inputs. Contracts store references to encrypted valu
 
 ## Check your work
 
-Run `npm run verify` inside either project. It compiles contracts, runs tests, checks lint and TypeScript, builds the frontend, and checks formatting for that project. Use `npm run format` to format changes. The solution has 26 tests covering encrypted input, permissions, bonus overflow, payments, retries, and withdrawal proofs.
+Run `npm run verify` inside either project. It compiles contracts, runs tests, checks lint and TypeScript, builds the frontend, and checks formatting for that project. Use `npm run format` to format changes. The solution has 31 tests covering encrypted input, permissions, bonus overflow, payments, retries, and withdrawal proofs.
 
 The frontend uses Next.js, RainbowKit, Wagmi, Viem, and the current [Zama SDK](https://docs.zama.org/protocol/sdk/overview). Contracts use FHEVM and [OpenZeppelin Confidential Contracts](https://docs.openzeppelin.com/confidential-contracts). Each project's lockfile keeps its package versions together; use `npm ci`.
 

@@ -53,6 +53,7 @@ export function useAssets(session: WorkshopSession) {
     return session.runTask(async () => {
       const { publicClient, address, deployment } = session.requireSession();
       const handle = await publicClient.readContract({
+        blockNumber: await session.readBlockNumber(),
         address: deployment.wrapper,
         abi: wrapperAbi,
         functionName: "confidentialBalanceOf",
@@ -61,7 +62,7 @@ export function useAssets(session: WorkshopSession) {
       session.setStatus("Decrypting your confidential balance…");
       const balance = await decryptAmount(await session.getSdk(), deployment.wrapper, handle);
       setConfidentialBalance(displayAmount(balance));
-      return "Your confidential balance is visible in this browser session.";
+      return "Your shielded balance is visible. Hide it when finished.";
     });
   }
 
@@ -105,8 +106,8 @@ export function useAssets(session: WorkshopSession) {
       setConfidentialBalance(undefined);
       setAmountInput("");
       return shieldToPayroll
-        ? "Payroll treasury funded. The shield amount is public; subsequent payroll transfers are confidential."
-        : "Tokens shielded to your wallet. View your confidential balance when ready.";
+        ? "Tokens shielded to payroll for employee payments."
+        : "Tokens shielded to your wallet. Use View balance in Assets to see them privately.";
     });
   }
 
@@ -196,13 +197,16 @@ export function useAssets(session: WorkshopSession) {
   }
 
   return {
+    walletAddress: session.account.address,
     amountInput,
     setAmountInput,
     shieldToPayroll,
     setShieldToPayroll,
+    shieldRecipient: shieldToPayroll ? session.deployment?.payroll : session.account.address,
     publicBalance: balanceQuery.data === undefined ? undefined : displayAmount(balanceQuery.data),
     publicBalanceError: balanceQuery.error,
     confidentialBalance,
+    hideBalance: () => setConfidentialBalance(undefined),
     withdrawalId,
     setWithdrawalId,
     faucet,

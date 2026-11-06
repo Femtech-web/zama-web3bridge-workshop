@@ -61,6 +61,10 @@ async function main() {
     throw new Error("Payroll token mismatch.");
   if ((await wrapper.underlying()).toLowerCase() !== deployment.publicToken.toLowerCase())
     throw new Error("Wrapper underlying mismatch.");
+  if (deployment.treasuryViewing) {
+    await payroll.treasuryBalance();
+    console.info("PASS: Private treasury balance viewing is supported.");
+  }
   console.info("PASS: Application bytecode, employer, payroll token, and wrapper underlying.");
   console.info(
     "Run test:sepolia to verify real encryption, permissions, and user decryption before calling this deployment known-good.",

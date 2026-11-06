@@ -8,6 +8,8 @@ import {
   parseAbi,
   parseEther,
   parseEventLogs,
+  BaseError,
+  RpcRequestError,
   zeroHash,
 } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
@@ -39,6 +41,9 @@ try {
     process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
   );
   const publicClient = createPublicClient({ chain: sepolia, transport });
+  const employeeFeeFunding = parseEther("0.006");
+  if ((await publicClient.getBalance({ address: employer.address })) <= employeeFeeFunding)
+    throw new Error("Fund the deployer with enough Sepolia ETH for rehearsal transactions.");
   const walletClient = createWalletClient({ chain: sepolia, account: employer, transport });
   const employeeWallet = createWalletClient({ chain: sepolia, account: employee, transport });
   const sdk = new ZamaSDK(
@@ -69,6 +74,8 @@ try {
     "function addBonus(address,bytes32,bytes)",
     "function salaryOf(address) view returns (bytes32)",
     "function pay(address,uint64,uint64)",
+    "function treasuryBalance() view returns (bytes32 balance,bool employerCanView)",
+    "function allowTreasuryBalanceViewing()",
     "function paymentState(address,uint64) view returns ((bytes32 remaining,bytes32 lastTransferred,uint64 attempts,bool started))",
   ]);
   const wrapperAbi = parseAbi([
@@ -78,6 +85,7 @@ try {
     "function finalizeUnwrap(bytes32,uint64,bytes)",
     "event UnwrapRequested(address indexed receiver,bytes32 indexed unwrapRequestId,bytes32 amount)",
   ]);
+  let confirmedBlockNumber;
   async function confirm(hash) {
     const receipt = await publicClient.waitForTransactionReceipt({
       hash,
@@ -85,7 +93,44 @@ try {
       timeout: 180_000,
     });
     if (receipt.status !== "success") throw new Error("Transaction reverted.");
+    confirmedBlockNumber = receipt.blockNumber;
     return receipt;
+  }
+  async function retryDelegatedAccountLimit(submit) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        return await submit();
+      } catch (error) {
+        const isPendingAccountLimit =
+          error instanceof BaseError &&
+          error.walk(
+            (cause) =>
+              cause instanceof RpcRequestError &&
+              cause.details?.includes("in-flight transaction limit reached for delegated accounts"),
+          ) instanceof RpcRequestError;
+        if (!isPendingAccountLimit || attempt === 7) throw error;
+        if (attempt === 0)
+          console.info("Waiting for the RPC to clear the previous confirmed transaction…");
+        await new Promise((resolve) => setTimeout(resolve, 4_000));
+      }
+    }
+  }
+  async function nextNonce(wallet) {
+    return publicClient.getTransactionCount({
+      address: wallet.account.address,
+      ...(confirmedBlockNumber === undefined
+        ? { blockTag: "pending" }
+        : { blockNumber: confirmedBlockNumber }),
+    });
+  }
+  async function sendContract(wallet, parameters) {
+    const nonce = await nextNonce(wallet);
+    // A known mempool rejection can be retried, always keeping the same nonce.
+    return retryDelegatedAccountLimit(() => wallet.writeContract({ ...parameters, nonce }));
+  }
+  async function sendTransaction(wallet, parameters) {
+    const nonce = await nextNonce(wallet);
+    return retryDelegatedAccountLimit(() => wallet.sendTransaction({ ...parameters, nonce }));
   }
   async function retryDecryption(client, contractAddress, encryptedValue) {
     for (let attempt = 0; attempt < 16; attempt++) {
@@ -97,6 +142,34 @@ try {
       }
     }
   }
+  async function verifyTreasuryBalance(expectedAmount) {
+    const readBalance = () =>
+      publicClient.readContract({
+        blockNumber: confirmedBlockNumber,
+        address: deployment.payroll,
+        abi: payrollAbi,
+        functionName: "treasuryBalance",
+      });
+    let [balanceHandle, canView] = await readBalance();
+    if (!canView) {
+      await confirm(
+        await sendContract(walletClient, {
+          address: deployment.payroll,
+          abi: payrollAbi,
+          functionName: "allowTreasuryBalanceViewing",
+        }),
+      );
+      [balanceHandle, canView] = await readBalance();
+    }
+    if (!canView) throw new Error("Treasury viewing authorization failed.");
+    const values =
+      balanceHandle === zeroHash
+        ? { [balanceHandle]: 0n }
+        : await retryDecryption(sdk, deployment.wrapper, balanceHandle);
+    if (expectedAmount !== undefined && values[balanceHandle] !== expectedAmount)
+      throw new Error("Private treasury balance verification failed.");
+    return values[balanceHandle];
+  }
   const tokenUnit = 10n ** 6n;
   stage = "encrypted salary";
   const salary = await sdk.encrypt({
@@ -105,7 +178,7 @@ try {
     userAddress: employer.address,
   });
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.payroll,
       abi: payrollAbi,
       functionName: "setSalary",
@@ -119,7 +192,7 @@ try {
     userAddress: employer.address,
   });
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.payroll,
       abi: payrollAbi,
       functionName: "addBonus",
@@ -128,6 +201,7 @@ try {
   );
   stage = "authorized employee decryption";
   const handle = await publicClient.readContract({
+    blockNumber: confirmedBlockNumber,
     address: deployment.payroll,
     abi: payrollAbi,
     functionName: "salaryOf",
@@ -137,34 +211,42 @@ try {
   if (decryptedSalary[handle] !== 5_500n * tokenUnit)
     throw new Error("Salary verification failed.");
   console.info("PASS: real encrypted input, confidential bonus, and employee user decryption.");
-  stage = "shield";
+  stage = "initial treasury balance";
+  const initialTreasuryBalance = await verifyTreasuryBalance();
+  console.info("PASS: current treasury balance authorization and private decryption.");
+  stage = "practice token claim";
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.publicToken,
       abi: parseAbi(["function faucet()"]),
       functionName: "faucet",
     }),
   );
+  stage = "public token approval";
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.publicToken,
       abi: erc20Abi,
       functionName: "approve",
       args: [deployment.wrapper, 6_000n * tokenUnit],
     }),
   );
+  stage = "shield";
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.wrapper,
       abi: wrapperAbi,
       functionName: "wrap",
       args: [deployment.payroll, 6_000n * tokenUnit],
     }),
   );
+  stage = "employer treasury viewing after shield";
+  await verifyTreasuryBalance(initialTreasuryBalance + 6_000n * tokenUnit);
+  console.info("PASS: employer-only authorization and private treasury balance decryption.");
   stage = "confidential payment";
   const period = BigInt(Math.floor(Date.now() / 1000));
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.payroll,
       abi: payrollAbi,
       functionName: "pay",
@@ -172,6 +254,7 @@ try {
     }),
   );
   const receipt = await publicClient.readContract({
+    blockNumber: confirmedBlockNumber,
     address: deployment.payroll,
     abi: payrollAbi,
     functionName: "paymentState",
@@ -181,6 +264,7 @@ try {
   if (receipt.remaining === zeroHash || paymentValues[receipt.remaining] !== 0n)
     throw new Error("Payment did not settle.");
   const balanceHandle = await publicClient.readContract({
+    blockNumber: confirmedBlockNumber,
     address: deployment.wrapper,
     abi: wrapperAbi,
     functionName: "confidentialBalanceOf",
@@ -189,13 +273,16 @@ try {
   const balance = await retryDecryption(employeeSdk, deployment.wrapper, balanceHandle);
   if (balance[balanceHandle] !== 5_500n * tokenUnit)
     throw new Error("Employee token balance verification failed.");
+  stage = "employer treasury viewing after payment";
+  await verifyTreasuryBalance(initialTreasuryBalance + 500n * tokenUnit);
+  console.info("PASS: treasury viewing uses the updated balance after payment.");
   console.info(
     "PASS: shield, confidential payment, zero remaining liability, and employee balance decryption.",
   );
   stage = "unshield request";
   // Bound fee funding for the temporary test wallet; refund its unused ETH below.
   await confirm(
-    await walletClient.sendTransaction({ to: employee.address, value: parseEther("0.006") }),
+    await sendTransaction(walletClient, { to: employee.address, value: employeeFeeFunding }),
   );
   refundEmployeeFees = async () => {
     const gasPrice = await publicClient.getGasPrice();
@@ -208,7 +295,7 @@ try {
     const remainingEth = await publicClient.getBalance({ address: employee.address });
     if (remainingEth > feeReserve)
       await confirm(
-        await employeeWallet.sendTransaction({
+        await sendTransaction(employeeWallet, {
           to: employer.address,
           value: remainingEth - feeReserve,
           gas: refundGas,
@@ -222,7 +309,7 @@ try {
     userAddress: employee.address,
   });
   const unwrapReceipt = await confirm(
-    await employeeWallet.writeContract({
+    await sendContract(employeeWallet, {
       address: deployment.wrapper,
       abi: wrapperAbi,
       functionName: "unwrap",
@@ -243,6 +330,7 @@ try {
   })[0]?.args.unwrapRequestId;
   if (!requestId) throw new Error("Withdrawal request event missing.");
   const publicBalanceBefore = await publicClient.readContract({
+    blockNumber: confirmedBlockNumber,
     address: deployment.publicToken,
     abi: erc20Abi,
     functionName: "balanceOf",
@@ -265,7 +353,7 @@ try {
   if (clearAmount !== 1_000n * tokenUnit) throw new Error("Withdrawal verification failed.");
   stage = "proof-checked unshield finalization";
   await confirm(
-    await walletClient.writeContract({
+    await sendContract(walletClient, {
       address: deployment.wrapper,
       abi: wrapperAbi,
       functionName: "finalizeUnwrap",
@@ -273,6 +361,7 @@ try {
     }),
   );
   const publicBalanceAfter = await publicClient.readContract({
+    blockNumber: confirmedBlockNumber,
     address: deployment.publicToken,
     abi: erc20Abi,
     functionName: "balanceOf",
@@ -297,7 +386,19 @@ try {
     cause && typeof cause === "object" && depth < 4;
     cause = cause.cause, depth++
   ) {
-    categories.push({ name: cause.name, code: cause.code, status: cause.status });
+    // Only contract RPC errors contain public transaction data; never print SDK error details.
+    const rpcReason =
+      error?.name === "ContractFunctionExecutionError" &&
+      cause.name === "RpcRequestError" &&
+      typeof cause.details === "string"
+        ? cause.details.replace(/0x[0-9a-fA-F]+/g, "[hex]").slice(0, 240)
+        : undefined;
+    categories.push({
+      name: cause.name,
+      code: cause.code,
+      status: cause.status,
+      rpcReason,
+    });
   }
   console.error(
     `Live check failed during ${stage}. Error categories: ${JSON.stringify(categories)}. No plaintext or key material was logged.`,

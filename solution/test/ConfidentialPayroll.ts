@@ -437,3 +437,80 @@ describeConfidentialFlow("Shield, pay, and unshield", function () {
     ).to.be.revertedWithCustomError(confidentialToken, "ERC7984UnauthorizedSpender");
   });
 });
+
+describeConfidentialFlow("Private treasury balance", function () {
+  it("handles an unfunded treasury without granting a zero handle", async function () {
+    const { payroll } = await deployPayrollFixture();
+    const state = await payroll.treasuryBalance();
+    expect(state.balance).to.equal(ethers.ZeroHash);
+    expect(state.employerCanView).to.equal(true);
+    await payroll.allowTreasuryBalanceViewing();
+  });
+
+  it("lets only the employer authorize treasury viewing, including before funding", async function () {
+    const { payroll, employee, outsider } = await deployPayrollFixture();
+    for (const signer of [employee, outsider]) {
+      await expect(
+        payroll.connect(signer).allowTreasuryBalanceViewing(),
+      ).to.be.revertedWithCustomError(payroll, "OnlyEmployer");
+    }
+  });
+
+  it("privately reveals the funded treasury to the employer without moving funds", async function () {
+    const fixture = await deployPayrollFixture();
+    await fundTreasury(fixture, 6_000n * TOKEN_UNIT);
+    const { payroll, confidentialToken, employer, employee, outsider } = fixture;
+    const tokenAddress = await confidentialToken.getAddress();
+    const before = await payroll.treasuryBalance();
+    expect(before.employerCanView).to.equal(false);
+    await rejects(() => decryptAmount(before.balance, tokenAddress, employer));
+    await payroll.allowTreasuryBalanceViewing();
+    const after = await payroll.treasuryBalance();
+    expect(after.balance).to.equal(before.balance);
+    expect(after.employerCanView).to.equal(true);
+    expect(
+      await decryptAmount(after.balance, await confidentialToken.getAddress(), employer),
+    ).to.equal(6_000n * TOKEN_UNIT);
+    for (const signer of [employee, outsider]) {
+      await rejects(() => decryptAmount(after.balance, tokenAddress, signer));
+    }
+    await rejects(() => fhevm.publicDecrypt([after.balance]));
+  });
+
+  it("requires permission for a new balance after another deposit", async function () {
+    const fixture = await deployPayrollFixture();
+    await fundTreasury(fixture, 100n * TOKEN_UNIT);
+    await fixture.payroll.allowTreasuryBalanceViewing();
+    const before = await fixture.payroll.treasuryBalance();
+    await fundTreasury(fixture, 200n * TOKEN_UNIT);
+    const after = await fixture.payroll.treasuryBalance();
+    expect(after.balance).not.to.equal(before.balance);
+    expect(after.employerCanView).to.equal(false);
+    await fixture.payroll.allowTreasuryBalanceViewing();
+    expect(
+      await decryptAmount(
+        after.balance,
+        await fixture.confidentialToken.getAddress(),
+        fixture.employer,
+      ),
+    ).to.equal(300n * TOKEN_UNIT);
+  });
+
+  it("uses the remaining token balance after an employee payment", async function () {
+    const fixture = await deployPayrollFixture();
+    await setSalary(fixture);
+    await fundTreasury(fixture, 6_000n * TOKEN_UNIT);
+    await fixture.payroll.allowTreasuryBalanceViewing();
+    await fixture.payroll.pay(fixture.employee.address, PERIOD, 0);
+    const state = await fixture.payroll.treasuryBalance();
+    expect(state.employerCanView).to.equal(false);
+    await fixture.payroll.allowTreasuryBalanceViewing();
+    expect(
+      await decryptAmount(
+        state.balance,
+        await fixture.confidentialToken.getAddress(),
+        fixture.employer,
+      ),
+    ).to.equal(1_000n * TOKEN_UNIT);
+  });
+});

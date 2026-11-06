@@ -1,0 +1,13 @@
+{
+  "chainId": 11155111,
+  "employer": "0xcc886a72f79BaEd0098432704a65373F52131c54",
+  "payroll": "0xf492BB77C1AF947dc67BD80DBa818E7e27Efa5d3",
+  "publicToken": "0x6C0E68f1164abEcB1433eA0f3fc8988336F5a82b",
+  "wrapper": "0x8789C420372d197c404f1Fdb5AA4C2C977CFfA68",
+  "deployedAt": "2026-11-05T21:59:25.379Z",
+  "transactions": {
+    "WorkshopUSD": "0xc5bf5060b92ef372f5d59f7df4cbbe028e4abd62c55e85b85fe35fb82512c80f",
+    "ConfidentialWorkshopUSD": "0x52e8d1b49bf7560e3d7848e3dbbf12e690a7870c3ede39f99e98f3d977dfe659",
+    "ConfidentialPayroll": "0x74e42f7c05a4c404c83ac26a8837cf3cbaa48998f1ae755a1404d48b5b401e7f"
+  }
+}

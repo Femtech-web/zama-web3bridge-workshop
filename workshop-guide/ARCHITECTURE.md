@@ -65,6 +65,8 @@ A payroll period records the salary due when payment first starts. A retry pays 
 
 To withdraw public tokens, an employee requests `unwrap`. The wrapper makes the withdrawal amount publicly decryptable. Later, `finalizeUnwrap(requestId, amount, proof)` checks that result and releases public tokens. Keep the request ID while processing finishes. This public exit exposes its amount; salary and bonus never use public decryption.
 
+The employer can privately view payroll's token balance through `treasuryBalance` and `allowTreasuryBalanceViewing`. The second function gives only the employer permission for the current balance handle; it does not move tokens. Deposits and payments create new balance handles, so the frontend checks permission again. Private decryption uses the wrapper's address because the token contract stores that balance. Old granted handles remain authorized; Hide only clears the displayed value.
+
 ## Package compatibility
 
 The browser uses `@zama-fhe/sdk` 3.7.1. The [previous Relayer SDK](https://github.com/zama-ai/relayer-sdk) is deprecated and ends maintenance on 6 November 2026; it remains only as a required dependency of Hardhat plugin 0.4.2. OpenZeppelin Confidential Contracts 0.5.3 and that plugin require FHEVM Solidity 0.11.1. Use the lockfile to keep these compatible versions together.

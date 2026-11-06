@@ -27,10 +27,11 @@ export function useWorkshopSession() {
     },
   });
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState("Connect a wallet to begin.");
+  const [status, setStatus] = useState<string>();
   const [error, setError] = useState<string>();
   const [transactionHash, setTransactionHash] = useState<Hex>();
   const inFlight = useRef(false);
+  const confirmedBlockNumber = useRef(0n);
   const sdkCache = useRef<{
     accountKey: string;
     promise: ReturnType<typeof createZamaClient>;
@@ -80,7 +81,17 @@ export function useWorkshopSession() {
       timeout: 120_000,
     });
     if (receipt.status !== "success") throw new Error("The contract transaction reverted.");
+    confirmedBlockNumber.current = receipt.blockNumber;
     return receipt;
+  }
+
+  async function readBlockNumber() {
+    const { publicClient } = requireSession();
+    const latestBlockNumber = await publicClient.getBlockNumber({ cacheTime: 0 });
+    // A load-balanced RPC may briefly serve a head older than our confirmed transaction.
+    return latestBlockNumber > confirmedBlockNumber.current
+      ? latestBlockNumber
+      : confirmedBlockNumber.current;
   }
 
   async function runTask(action: () => Promise<string>) {
@@ -99,7 +110,10 @@ export function useWorkshopSession() {
     } finally {
       inFlight.current = false;
       setBusy(false);
-      await queryClient.invalidateQueries({ queryKey: ["public-balance"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["public-balance"] }),
+        queryClient.invalidateQueries({ queryKey: ["treasury-balance"] }),
+      ]);
     }
   }
 
@@ -117,9 +131,14 @@ export function useWorkshopSession() {
     requireSession,
     getSdk,
     confirmTransaction,
+    readBlockNumber,
     runTask,
     ready: Boolean(account.address && account.chainId === SEPOLIA_CHAIN_ID && deploymentQuery.data),
-    isEmployer: account.address?.toLowerCase() === deploymentQuery.data?.employer.toLowerCase(),
+    isEmployer: Boolean(
+      account.address &&
+      deploymentQuery.data &&
+      account.address.toLowerCase() === deploymentQuery.data.employer.toLowerCase(),
+    ),
   };
 }
 

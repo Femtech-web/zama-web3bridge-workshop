@@ -18,10 +18,8 @@ export function EmployerPanel({
         <span className="eyebrow">MANAGE & PAY</span>
       </div>
       <h2 id="employer-heading">Employer</h2>
-      <p className="panel-intro">A public transaction. A private salary.</p>
-      {!isEmployer && (
-        <p className="hint">Connect the deployed employer wallet to manage payroll.</p>
-      )}
+      <p className="panel-intro">Set an employee’s salary, then pay from payroll funds.</p>
+      {!isEmployer && <p className="hint">Connect the employer wallet to use these controls.</p>}
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -101,8 +99,15 @@ export function EmployerPanel({
         </button>
       </div>
       <p className="hint" id="period-help">
-        YYYYMM · Fund payroll in Assets first. Retries settle only this period’s unpaid remainder.
+        Use YYYYMM, e.g. 202611. Fund payroll in Assets before paying.
       </p>
+      <details className="inline-help">
+        <summary>About salary and payments</summary>
+        <p>
+          Setting a salary does not move tokens. Pay employee sends the amount due for the selected
+          period. Retrying a payment sends only its unpaid remainder.
+        </p>
+      </details>
     </section>
   );
 }

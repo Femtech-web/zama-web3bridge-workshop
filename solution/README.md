@@ -1,6 +1,6 @@
 # Confidential Payroll: solution
 
-The complete confidential payroll app, with 26 tests covering encrypted salaries, permissions, payments, and withdrawals.
+The complete confidential payroll app, with 31 tests covering encrypted salaries, permissions, payments, and withdrawals.
 
 This folder is a standalone project. Use Node 22 and npm 10+; run all commands here.
 

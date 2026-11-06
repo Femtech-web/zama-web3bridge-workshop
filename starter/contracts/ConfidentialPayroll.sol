@@ -132,6 +132,18 @@ contract ConfidentialPayroll is
         return payments[employee][period];
     }
 
+    function treasuryBalance() public view returns (euint64 balance, bool employerCanView) {
+        balance = token.confidentialBalanceOf(address(this));
+        employerCanView = !FHE.isInitialized(balance) || FHE.isAllowed(balance, employer);
+    }
+
+    /// @notice Authorize private viewing of the current treasury balance, without moving tokens.
+    /// @dev Deposits and payments create a new balance handle that may need a new grant.
+    function allowTreasuryBalanceViewing() external onlyEmployer {
+        (euint64 balance, ) = treasuryBalance();
+        if (FHE.isInitialized(balance)) FHE.allow(balance, employer);
+    }
+
     function _grant(euint64 value, address employee) internal {
         // @workshop:start 5
         // TODO 5: Grant payroll, employee, and employer permissions.

@@ -5,6 +5,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { useWorkshopSession } from "@/hooks/use-workshop-session";
 import { usePayroll } from "@/hooks/use-payroll";
 import { useAssets } from "@/hooks/use-assets";
+import { useTreasuryBalance } from "@/hooks/use-treasury-balance";
 import { SEPOLIA_CHAIN_ID } from "@/lib/config";
 import { EmployerPanel } from "./employer-panel";
 import { EmployeePanel } from "./employee-panel";
@@ -14,6 +15,7 @@ function ConnectedWorkspace() {
   const session = useWorkshopSession();
   const payroll = usePayroll(session);
   const assets = useAssets(session);
+  const treasury = useTreasuryBalance(session);
   const { switchChain, isPending: switchingChain } = useSwitchChain();
   const wrongNetwork = Boolean(
     session.account.address && session.account.chainId !== SEPOLIA_CHAIN_ID,
@@ -53,45 +55,58 @@ function ConnectedWorkspace() {
       )}
       <div className="workspace-grid">
         <EmployerPanel payroll={payroll} disabled={disabled} isEmployer={session.isEmployer} />
-        <EmployeePanel
-          payroll={payroll}
-          assets={assets}
-          address={session.account.address}
-          disabled={disabled}
-        />
+        <EmployeePanel payroll={payroll} address={session.account.address} disabled={disabled} />
       </div>
-      <div
-        className={`status-bar${session.error ? " status-error" : ""}`}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <span className={`status-dot${session.busy ? " working" : ""}`} aria-hidden="true" />
-        <div>
-          <p>{session.error || session.status}</p>
-          {session.transactionHash && (
+      {(session.status || session.error || session.busy) && (
+        <div
+          className={`status-bar${session.error ? " status-error" : ""}`}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span className={`status-dot${session.busy ? " working" : ""}`} aria-hidden="true" />
+          <div>
+            <p>{session.error || session.status}</p>
+            {session.transactionHash && (
+              <a
+                href={`https://sepolia.etherscan.io/tx/${session.transactionHash}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View transaction on Etherscan ↗
+              </a>
+            )}
+          </div>
+          {session.busy && <span className="eyebrow">IN PROGRESS</span>}
+        </div>
+      )}
+      <AssetsPanel assets={assets} treasury={treasury} disabled={disabled} />
+      {session.deployment && (
+        <details className="inline-help deployment-details">
+          <summary>Deployment details</summary>
+          <p>
+            Current payroll on Sepolia:{" "}
             <a
-              href={`https://sepolia.etherscan.io/tx/${session.transactionHash}`}
               target="_blank"
               rel="noreferrer"
+              href={`https://sepolia.etherscan.io/address/${session.deployment.payroll}`}
             >
-              View transaction on Etherscan ↗
+              {session.deployment.payroll} ↗
             </a>
+          </p>
+          {session.deployment.previousPayroll && (
+            <p>
+              Earlier funds and salaries remain in the{" "}
+              <a
+                target="_blank"
+                rel="noreferrer"
+                href={`https://sepolia.etherscan.io/address/${session.deployment.previousPayroll}`}
+              >
+                previous payroll ↗
+              </a>
+              . New deposits and salaries use the current payroll.
+            </p>
           )}
-        </div>
-        {session.busy && <span className="eyebrow">IN PROGRESS</span>}
-      </div>
-      <AssetsPanel assets={assets} disabled={disabled} />
-      {session.deployment && (
-        <p className="contract-link">
-          Payroll on Sepolia{" "}
-          <a
-            target="_blank"
-            rel="noreferrer"
-            href={`https://sepolia.etherscan.io/address/${session.deployment.payroll}`}
-          >
-            {session.deployment.payroll} ↗
-          </a>
-        </p>
+        </details>
       )}
     </>
   );
@@ -121,7 +136,7 @@ export function PayrollApp() {
       <main id="main">
         <section className="hero">
           <div>
-            <p className="eyebrow">THE CONFIDENTIAL ONCHAIN FINANCE WORKSHOP</p>
+            <p className="eyebrow">ZAMA × WEB3BRIDGE WORKSHOP</p>
             <h1>
               Payroll.
               <br />
@@ -129,36 +144,17 @@ export function PayrollApp() {
             </h1>
           </div>
           <div className="hero-note">
-            <span className="note-mark" aria-hidden="true">
-              ↳
-            </span>
-            <p>
-              Manage salaries.
-              <br />
-              Pay onchain.
-              <br />
-              <strong>Keep the numbers private.</strong>
-            </p>
-            <span className="eyebrow">BUILT WITH ZAMA · ERC-7984</span>
+            <p>Manage salaries and pay employees onchain. Keep the amounts private.</p>
           </div>
         </section>
-        <div className="journey">
-          <span>01 ENCRYPT</span>
-          <span aria-hidden="true">→</span>
-          <span>02 COMPUTE</span>
-          <span aria-hidden="true">→</span>
-          <span>03 AUTHORIZE</span>
-          <span aria-hidden="true">→</span>
-          <span>04 PAY</span>
-        </div>
         <ConnectedWorkspace
           key={`${account.address ?? "disconnected"}:${account.chainId ?? "none"}`}
         />
       </main>
       <footer>
-        <span>Confidentiality is a permission. Not a hidden address.</span>
+        <span>A confidential payroll demo on Sepolia.</span>
         <a target="_blank" rel="noreferrer" href="https://docs.zama.org/protocol">
-          Keep building ↗
+          Zama documentation ↗
         </a>
         <span>ZAMA × WEB3BRIDGE / NIGERIA</span>
       </footer>

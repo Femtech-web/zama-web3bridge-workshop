@@ -1,6 +1,6 @@
 # Confidential Payroll: starter
 
-Fill in the 14 numbered TODOs to build confidential payroll. The initial tests run three baseline checks and leave 23 exercise tests pending. Run `npm run test:full` as you complete the lesson.
+Fill in the 14 numbered TODOs to build confidential payroll. The initial tests run three baseline checks and leave 28 exercise tests pending. Run `npm run test:full` as you complete the lesson.
 
 This folder is a standalone project. Use Node 22 and npm 10+; run all commands here.
 

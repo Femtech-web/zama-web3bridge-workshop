@@ -10,7 +10,7 @@ For the frontend half, copy the public rehearsal configuration with `cp ../works
 
 Open `starter/` in the editor and keep the lesson terminal in that folder. All step commands below run from `starter/`. Keep `solution/`, this guide, the terminal, and the deployed solution frontend available. You can show the prepared Sepolia solution while modifying/testing the starter locally; a source change does not upgrade a deployed contract. To demo the completed starter against its own contracts, deploy it after checkpoint 12 and use its generated deployment.json.
 
-Default starter tests show 3 baseline passes and 23 pending confidential exercises. This is intentional: incomplete actions are guarded by numbered TODO errors. `test:full` enables the actual exercise suite. Do not present pending tests as proof of confidential correctness.
+Default starter tests show 3 baseline passes and 28 pending confidential exercises. This is intentional: incomplete actions are guarded by numbered TODO errors. `test:full` enables the actual exercise suite. Do not present pending tests as proof of confidential correctness.
 
 ## Opening: slides 1–4, four minutes
 
@@ -203,7 +203,10 @@ npm run compile
 **Code change:** Replace this TODO region with:
 
 ```ts
-return fhevm.createEncryptedInput(contractAddress, sender.address).add64(amount).encrypt();
+return fhevm
+  .createEncryptedInput(contractAddress, sender.address)
+  .add64(amount)
+  .encrypt();
 ```
 
 **Run from `starter/`:**
@@ -267,12 +270,13 @@ npm run test:full -- --grep 'Confidential salary and permissions'
 **Code change:** Replace this TODO region with:
 
 ```ts
-const [{ ZamaSDK, MemoryStorage }, { createConfig }, { web }, { sepolia }] = await Promise.all([
-  import("@zama-fhe/sdk"),
-  import("@zama-fhe/sdk/viem"),
-  import("@zama-fhe/sdk/web"),
-  import("@zama-fhe/sdk/chains"),
-]);
+const [{ ZamaSDK, MemoryStorage }, { createConfig }, { web }, { sepolia }] =
+  await Promise.all([
+    import("@zama-fhe/sdk"),
+    import("@zama-fhe/sdk/viem"),
+    import("@zama-fhe/sdk/web"),
+    import("@zama-fhe/sdk/chains"),
+  ]);
 return new ZamaSDK(
   createConfig({
     chains: [sepolia],
@@ -394,9 +398,12 @@ npm run typecheck
 **Code change:** Replace this TODO region with:
 
 ```ts
-const values = await sdk.decryption.decryptValues([{ encryptedValue, contractAddress }]);
+const values = await sdk.decryption.decryptValues([
+  { encryptedValue, contractAddress },
+]);
 const amount = values[encryptedValue];
-if (typeof amount !== "bigint") throw new Error("The Relayer did not return a valid amount.");
+if (typeof amount !== "bigint")
+  throw new Error("The Relayer did not return a valid amount.");
 return amount;
 ```
 
@@ -440,7 +447,7 @@ npm run compile
 npm run test:full
 ```
 
-**Expected:** All 26 tests pass. Duplicate attempt arguments revert; a funded retry settles the same period without double payment.
+**Expected:** All 31 tests pass. Duplicate attempt arguments revert; a funded retry settles the same period without double payment.
 
 **Likely failure:** allowTransient is missing, the treasury has insufficient funds, or the UI calls an older deployed contract.
 
@@ -483,7 +490,7 @@ node ../workshop-guide/scripts/checkpoint.mjs 13 --apply
 npm run typecheck
 ```
 
-**Expected:** With the deployed solution: Get practice tokens → enter 6000 → keep Shield to payroll checked → Shield tokens. Employer approves and wraps in two transactions; then pays the employee.
+**Expected:** With the deployed solution: Get practice tokens → Shield → enter 6000 → Send to: Payroll treasury → Shield tokens. Employer approves and wraps in two transactions; then pays the employee. Payroll funds stay in the contract. Assets shows the connected wallet's separate shielded balance with View/Hide controls. For personal shielding, choose My wallet in Send to. As employer, show Payroll shielded balance → View balance. Its first view may require an authorization transaction before private decryption. Hide it afterward; a deposit or payment may require fresh authorization. This prepared helper is outside the numbered TODOs.
 
 **Likely failure:** Tokens were shielded to the personal wallet, public balance is insufficient, or only the approval transaction completed.
 
@@ -508,7 +515,8 @@ npm run typecheck
 ```ts
 const result = await publicDecryptWithdrawal(await session.getSdk(), requestId);
 const clearAmount = result.clearValues[requestId];
-if (typeof clearAmount !== "bigint") throw new Error("Withdrawal amount is not available yet.");
+if (typeof clearAmount !== "bigint")
+  throw new Error("Withdrawal amount is not available yet.");
 session.setStatus("Waiting for wallet… Finalize unshield.");
 await session.confirmTransaction(
   await walletClient.writeContract({
@@ -529,7 +537,7 @@ node ../workshop-guide/scripts/checkpoint.mjs 14 --apply
 npm run typecheck
 ```
 
-**Expected:** Switch to a gas-funded employee wallet; enter 1000 → Request unshield → retain request ID → Finalize unshield. Public wUSD rises only after the second transaction.
+**Expected:** Switch to a gas-funded employee wallet; choose Unshield in Assets → enter 1000 → Request unshield. Complete a pending withdrawal opens with the request ID. Retain it, then Finalize unshield. Public wUSD rises only after the second transaction.
 
 **Likely failure:** Relayer/KMS is still processing, the tab was refreshed, the wrong request ID was used, or finalization already happened.
 

@@ -14,6 +14,8 @@ export async function GET() {
           publicToken: process.env.PUBLIC_TOKEN_ADDRESS,
           wrapper: process.env.CONFIDENTIAL_TOKEN_ADDRESS,
           employer: process.env.EMPLOYER_ADDRESS,
+          treasuryViewing: process.env.PAYROLL_TREASURY_VIEWING === "true",
+          previousPayroll: process.env.PREVIOUS_PAYROLL_ADDRESS || undefined,
         }
       : JSON.parse(await readFile(join(process.cwd(), "deployment.json"), "utf8"));
     return Response.json(validateDeployment(raw), { headers: { "Cache-Control": "no-store" } });

@@ -141,6 +141,13 @@ export const payrollAbi = [
   },
   {
     inputs: [],
+    name: "allowTreasuryBalanceViewing",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "confidentialProtocolId",
     outputs: [
       {
@@ -284,6 +291,24 @@ export const payrollAbi = [
         internalType: "contract IERC7984",
         name: "",
         type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "treasuryBalance",
+    outputs: [
+      {
+        internalType: "euint64",
+        name: "balance",
+        type: "bytes32",
+      },
+      {
+        internalType: "bool",
+        name: "employerCanView",
+        type: "bool",
       },
     ],
     stateMutability: "view",

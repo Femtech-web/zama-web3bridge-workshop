@@ -98,9 +98,10 @@ export function usePayroll(session: WorkshopSession) {
         functionName: "pay",
         args: [employee, period, state.attempts],
       });
-      await session.confirmTransaction(hash);
+      const confirmedPayment = await session.confirmTransaction(hash);
       session.setStatus("Payment confirmed. Privately checking the unpaid remainder…");
       const receipt = await publicClient.readContract({
+        blockNumber: confirmedPayment.blockNumber,
         address: deployment.payroll,
         abi: payrollAbi,
         functionName: "paymentState",

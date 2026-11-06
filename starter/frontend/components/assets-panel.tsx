@@ -1,102 +1,189 @@
 "use client";
 
+import { useState } from "react";
 import type { AssetControls } from "@/hooks/use-assets";
+import type { TreasuryControls } from "@/hooks/use-treasury-balance";
+import { ConfidentialBalance } from "./confidential-balance";
 
-export function AssetsPanel({ assets, disabled }: { assets: AssetControls; disabled: boolean }) {
+export function AssetsPanel({
+  assets,
+  treasury,
+  disabled,
+}: {
+  assets: AssetControls;
+  treasury: TreasuryControls;
+  disabled: boolean;
+}) {
+  const [operation, setOperation] = useState<"shield" | "unshield">("shield");
+  const isShielding = operation === "shield";
+
   return (
     <section className="panel assets-panel" aria-labelledby="assets-heading">
-      <div className="assets-heading">
-        <div>
-          <div className="section-top">
-            <span className="step-number">03</span>
-            <span className="eyebrow">MOVE BETWEEN PUBLIC & PRIVATE</span>
-          </div>
-          <h2 id="assets-heading">Assets</h2>
-        </div>
+      <div className="section-top">
+        <span className="step-number">03</span>
+        <span className="eyebrow">PUBLIC & PRIVATE TOKENS</span>
+      </div>
+      <h2 id="assets-heading">Assets</h2>
+      <div className="asset-balances">
         <div className="public-balance">
-          <span>YOUR PUBLIC BALANCE</span>
-          <strong>
-            {assets.publicBalance ?? "—"} <small>wUSD</small>
-          </strong>
+          <p className="wallet-label">YOUR PUBLIC BALANCE</p>
+          <p className="balance-value">
+            {assets.publicBalance ?? "—"} <span>wUSD</span>
+          </p>
           <button className="text-button" disabled={disabled} onClick={() => void assets.faucet()}>
             Get practice tokens ↗
           </button>
+          {assets.publicBalanceError && (
+            <p className="hint" role="alert">
+              Balance unavailable. Please retry.
+            </p>
+          )}
         </div>
+        <ConfidentialBalance
+          balance={assets.confidentialBalance}
+          disabled={disabled}
+          onView={() => void assets.viewBalance()}
+          onHide={assets.hideBalance}
+        />
+        {treasury.isEmployer && (
+          <div className="treasury-balance">
+            <ConfidentialBalance
+              label="PAYROLL SHIELDED BALANCE"
+              balance={treasury.balance}
+              disabled={disabled || !treasury.supported}
+              onView={() => void treasury.viewBalance()}
+              onHide={treasury.hideBalance}
+            />
+            {!treasury.supported && (
+              <p className="hint">This earlier payroll does not support balance viewing.</p>
+            )}
+            {treasury.error && (
+              <p className="hint" role="alert">
+                Payroll balance unavailable. Please retry.
+              </p>
+            )}
+          </div>
+        )}
       </div>
-      {assets.publicBalanceError && (
-        <p className="hint" role="alert">
-          Public balance could not be loaded. Check the Sepolia RPC.
+      <details className="inline-help">
+        <summary>How these balances work</summary>
+        <p>
+          Your shielded balance belongs to your connected wallet. Payroll holds a separate balance
+          for employee payments; only the employer can view it.
         </p>
-      )}
-      <div className="asset-flow" aria-label="Payment journey">
-        <span>Public wUSD</span>
-        <span aria-hidden="true">→</span>
-        <span>Shield</span>
-        <span aria-hidden="true">→</span>
-        <strong>Confidential payroll</strong>
-        <span aria-hidden="true">→</span>
-        <span>Unshield</span>
+        <p>
+          Viewing payroll's balance may first ask for an authorization transaction after a deposit
+          or payment. This does not move tokens.
+        </p>
+      </details>
+      <div className="asset-operation-switch" role="group" aria-label="Token action">
+        <button
+          type="button"
+          aria-pressed={isShielding}
+          aria-controls="asset-operation"
+          onClick={() => setOperation("shield")}
+        >
+          Shield
+        </button>
+        <button
+          type="button"
+          aria-pressed={!isShielding}
+          aria-controls="asset-operation"
+          onClick={() => setOperation("unshield")}
+        >
+          Unshield
+        </button>
       </div>
-      <div className="assets-grid">
-        <div>
-          <label htmlFor="asset-amount">
-            Token amount <span>wUSD / cwUSD</span>
-          </label>
-          <input
-            id="asset-amount"
-            value={assets.amountInput}
-            onChange={(event) => assets.setAmountInput(event.target.value)}
-            placeholder="6000.00"
-            inputMode="decimal"
-            autoComplete="off"
-          />
-          <label className="checkbox-label">
+      <div id="asset-operation" className="asset-operation">
+        <p className="panel-intro">
+          {isShielding
+            ? "Move public tokens into a shielded balance."
+            : "Withdraw shielded tokens from your wallet in two steps."}
+        </p>
+        <div className="assets-grid">
+          <div>
+            <label htmlFor="asset-amount">
+              Amount <span>{isShielding ? "wUSD" : "cwUSD"}</span>
+            </label>
             <input
-              type="checkbox"
-              checked={assets.shieldToPayroll}
-              onChange={(event) => assets.setShieldToPayroll(event.target.checked)}
-            />{" "}
-            Shield to payroll treasury <span className="hint">Uncheck to fund your wallet.</span>
-          </label>
-          <div className="button-row">
-            <button disabled={disabled || !assets.amountInput} onClick={() => void assets.shield()}>
-              Shield tokens ↗
-            </button>
+              id="asset-amount"
+              value={assets.amountInput}
+              onChange={(event) => assets.setAmountInput(event.target.value)}
+              placeholder="0.00"
+              inputMode="decimal"
+              autoComplete="off"
+            />
+          </div>
+          {isShielding ? (
+            <div>
+              <label htmlFor="shield-destination">Send to</label>
+              <select
+                id="shield-destination"
+                value={assets.shieldToPayroll ? "payroll" : "wallet"}
+                onChange={(event) => assets.setShieldToPayroll(event.target.value === "payroll")}
+                aria-describedby="shield-recipient"
+              >
+                <option value="payroll">Payroll treasury</option>
+                <option value="wallet">My wallet</option>
+              </select>
+              <p id="shield-recipient" className="hint" aria-live="polite">
+                {assets.shieldToPayroll
+                  ? "Funds employee payments."
+                  : "Adds to your wallet’s shielded balance."}{" "}
+                {assets.shieldRecipient && (
+                  <a
+                    href={`https://sepolia.etherscan.io/address/${assets.shieldRecipient}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={assets.shieldRecipient}
+                    aria-label={`View recipient ${assets.shieldRecipient} on Etherscan`}
+                  >
+                    {assets.shieldRecipient.slice(0, 6)}…{assets.shieldRecipient.slice(-4)} ↗
+                  </a>
+                )}
+              </p>
+            </div>
+          ) : (
+            <p className="withdrawal-note">1. Request a withdrawal. 2. Complete it below.</p>
+          )}
+        </div>
+        <button
+          className={isShielding ? "primary asset-submit" : "asset-submit"}
+          disabled={disabled || !assets.amountInput}
+          onClick={() => void (isShielding ? assets.shield() : assets.requestUnshield())}
+        >
+          {isShielding ? "Shield tokens" : "Request unshield"} <span aria-hidden="true">↗</span>
+        </button>
+        {!isShielding && (
+          <details className="unshield-finalization" open={Boolean(assets.withdrawalId)}>
+            <summary>Complete a pending withdrawal</summary>
+            <label htmlFor="withdrawal-id">Request ID</label>
+            <input
+              id="withdrawal-id"
+              value={assets.withdrawalId}
+              onChange={(event) => assets.setWithdrawalId(event.target.value)}
+              placeholder="0x…"
+              autoComplete="off"
+              spellCheck={false}
+              aria-describedby="withdrawal-help"
+            />
+            <p className="hint" id="withdrawal-help">
+              Keep this ID to resume after a refresh. If processing is still underway, try again
+              shortly.
+            </p>
             <button
               className="secondary"
-              disabled={disabled || !assets.amountInput}
-              onClick={() => void assets.requestUnshield()}
+              disabled={disabled || !assets.withdrawalId}
+              onClick={() => void assets.finalizeUnshield()}
             >
-              Request unshield ↗
+              Finalize unshield <span aria-hidden="true">→</span>
             </button>
-          </div>
-        </div>
-        <div className="finalize-box">
-          <label htmlFor="withdrawal-id">Pending unshield request ID</label>
-          <input
-            id="withdrawal-id"
-            value={assets.withdrawalId}
-            onChange={(event) => assets.setWithdrawalId(event.target.value)}
-            placeholder="0x… from UnwrapRequested"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <p className="hint">
-            Unshield takes two transactions. Keep this public request ID to resume after a refresh.
-            Retry finalization once decryption is ready.
-          </p>
-          <button
-            className="secondary"
-            disabled={disabled || !assets.withdrawalId}
-            onClick={() => void assets.finalizeUnshield()}
-          >
-            Finalize unshield →
-          </button>
-        </div>
+          </details>
+        )}
       </div>
       <p className="disclosure">
-        Shield and unshield amounts are public. Salaries, bonuses, private balances, and payroll
-        transfer amounts remain encrypted. Addresses and transaction timing are public.
+        Salaries and shielded balances are private. Shield and unshield amounts, wallet addresses,
+        and transaction times are public.
       </p>
     </section>
   );

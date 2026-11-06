@@ -9,6 +9,8 @@ export type Deployment = {
   payroll: Address;
   publicToken: Address;
   wrapper: Address;
+  treasuryViewing: boolean;
+  previousPayroll?: Address;
 };
 
 export function validateDeployment(value: unknown): Deployment {
@@ -31,5 +33,8 @@ export function validateDeployment(value: unknown): Deployment {
     payroll: address("payroll"),
     publicToken: address("publicToken"),
     wrapper: address("wrapper"),
+    treasuryViewing: candidate.treasuryViewing === true,
+    previousPayroll:
+      candidate.previousPayroll === undefined ? undefined : address("previousPayroll"),
   };
 }
